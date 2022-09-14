@@ -68,9 +68,16 @@ class MyPromise {
 
   // 4. 当实例调用promise.then时执行函数。
   then(onFulfilled, onRejected) {
-    // return一个新的promise，实现链式调用。
+    // 6. return一个新的promise，实现链式调用。
     const promise2 = new MyPromise((resolve, reject) => {
-      // 判断状态
+      // 这里的内容在执行器中，会立即执行
+
+      /**
+       * 5. 判断状态，只有resolve和reject函数才可以修改this.status的状态。
+       *  也就是说，当MyPromise实例生命一个异步对象时，this.status的状态还是PENDING
+       *  此时，需要先把.then(onFulfilled,onRejected)传递的函数放入函数队列
+       *  等到异步任务执行时(resolve, reject)，再从任务队列中执行then传递的方法。
+       */
       if (this.status === FULFILLED) {
         /**创建一个微任务等待 promise2 完成初始化, 以便判断then方法是否返回了自身。
          *  const p1 = promise.then(value => {
@@ -78,7 +85,6 @@ class MyPromise {
               return p1
             })
          */
-
         queueMicrotask(() => {
           // 获取成功回调函数的执行结果，并且把值返回
           const x = onFulfilled(this.value)
@@ -111,7 +117,7 @@ function resolvePromise(promise2, x, resolve, reject) {
   if (x instanceof MyPromise) {
     // 执行 x，调用 then 方法，目的是将其状态变为 fulfilled 或者 rejected
     // x.then(value => resolve(value), reason => reject(reason))
-    // 简化之后
+    // 简化之后，注意这里的resolve和reject是then中return的new MyPromise对象的exector方法中的方法。
     x.then(resolve, reject)
   } else {
     // 普通值
