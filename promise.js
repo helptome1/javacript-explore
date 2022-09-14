@@ -6,9 +6,11 @@ const FULFILLED = 'fulfilled'
 const REJECTED = 'rejected'
 
 class MyPromise {
+  // new MyPromise(executor)时会传入一个函数executor
+  // executor接收两个函数，一个是成功的回调resolve, 一个是失败的回调reject
   constructor(executor) {
-    // executor 是一个执行器，进入会立即执行
-    // 并传入resolve和reject方法ƒ
+    // 1. executor 是一个执行器，进入会立即执行，
+    // 并传入resolve和reject方法
     executor(this.resolve, this.reject)
   }
 
@@ -31,17 +33,16 @@ class MyPromise {
   // onRejectedCallback = null
   onRejectedCallbacks = []
 
-  // 更改成功后的状态
+  // 2. executor执行时把resolve传递过去，执行时传入参数value
   resolve = (value) => {
-    console.log('value,', value)
     // 只有状态是等待，才执行状态修改
     if (this.status == PENDING) {
-      // 修改成功后的值。
+      // 更改成功后的状态
       this.status = FULFILLED
       // 保存成功之后的值
       this.value = value
 
-      // 判断成功回调是否存在，如果存在就调用
+      // 3. 判断成功回调是否存在，如果存在就调用
       // resolve里面将所有成功的回调拿出来执行
       while (this.onFulfilledCallbacks.length) {
         // Array.shift() 取出数组第一个元素，然后（）调用，shift不是纯函数，取出后，数组将失去该元素，直到数组为空
@@ -49,11 +50,11 @@ class MyPromise {
       }
     }
   }
-  // 更改失败后的状态
+
   reject = (reason) => {
     // 只有状态是等待，才执行状态修改
     if (this.status === PENDING) {
-      // 状态成功为失败
+      // 更改失败后的状态
       this.status = REJECTED
       // 保存失败后的原因
       this.reason = reason
@@ -65,16 +66,26 @@ class MyPromise {
     }
   }
 
+  // 4. 当实例调用promise.then时执行函数。
   then(onFulfilled, onRejected) {
-    //return一个新的promise
-    return new MyPromise((resolve, reject) => {
+    // return一个新的promise，实现链式调用。
+    const promise2 = new MyPromise((resolve, reject) => {
       // 判断状态
       if (this.status === FULFILLED) {
-        // 调用成功回调，并且把值返回
-        // 获取成功回调函数的执行结果
-        const x = onFulfilled(this.value)
-        // 传入 resolvePromise 集中处理
-        resolvePromise(x, resolve, reject)
+        /**创建一个微任务等待 promise2 完成初始化, 以便判断then方法是否返回了自身。
+         *  const p1 = promise.then(value => {
+              console.log(value)
+              return p1
+            })
+         */
+
+        queueMicrotask(() => {
+          // 获取成功回调函数的执行结果，并且把值返回
+          const x = onFulfilled(this.value)
+          // 传入 resolvePromise 集中处理
+          // resolvePromise 集中处理，将 promise2 传入
+          resolvePromise(promise2, x, resolve, reject)
+        })
       } else if (this.status === REJECTED) {
         // 调用失败回调，并且把原因返回
         onRejected(this.reason)
@@ -85,11 +96,18 @@ class MyPromise {
         this.onRejectedCallbacks.push(onRejected)
       }
     })
+
+    return promise2
   }
 }
-function resolvePromise(x, resolve, reject) {
+function resolvePromise(promise2, x, resolve, reject) {
+  // 处理then方法中返回自身的bug
+  if (promise2 === x) {
+    return reject(new TypeError('Chaining cycle detected for promise #<Promise>'))
+  }
+
   // 判断x是不是 MyPromise 实例对象,
-  // /分类讨论返回值,如果是Promise,那么等待Promise状态变更,否则直接resolve
+  // 分类讨论返回值,如果是Promise,那么等待Promise状态变更,否则直接resolve
   if (x instanceof MyPromise) {
     // 执行 x，调用 then 方法，目的是将其状态变为 fulfilled 或者 rejected
     // x.then(value => resolve(value), reason => reject(reason))
