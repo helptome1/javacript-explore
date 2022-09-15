@@ -9,9 +9,15 @@ class MyPromise {
   // new MyPromise(executor)时会传入一个函数executor
   // executor接收两个函数，一个是成功的回调resolve, 一个是失败的回调reject
   constructor(executor) {
-    // 1. executor 是一个执行器，进入会立即执行，
-    // 并传入resolve和reject方法
-    executor(this.resolve, this.reject)
+    // 捕获执行器中的代码，如果执行器中有代码错误，那么 Promise 的状态要变为失败
+    try {
+      // 1. executor 是一个执行器，进入会立即执行，
+      // 并传入resolve和reject方法
+      executor(this.resolve, this.reject)
+    } catch (error) {
+      // 如果有错误，就直接执行 reject
+      this.reject(error)
+    }
   }
 
   // 储存状态的变量，初始值是 pending
@@ -86,11 +92,16 @@ class MyPromise {
             })
          */
         queueMicrotask(() => {
-          // 获取成功回调函数的执行结果，并且把值返回
-          const x = onFulfilled(this.value)
-          // 传入 resolvePromise 集中处理
-          // resolvePromise 集中处理，将 promise2 传入
-          resolvePromise(promise2, x, resolve, reject)
+          // 捕获错误的状态
+          try {
+            // 获取成功回调函数的执行结果，并且把值返回
+            const x = onFulfilled(this.value)
+            // 传入 resolvePromise 集中处理
+            // resolvePromise 集中处理，将 promise2 传入
+            resolvePromise(promise2, x, resolve, reject)
+          } catch (error) {
+            this.reject(error)
+          }
         })
       } else if (this.status === REJECTED) {
         // 调用失败回调，并且把原因返回
