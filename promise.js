@@ -104,13 +104,45 @@ class MyPromise {
           }
         })
       } else if (this.status === REJECTED) {
-        // 调用失败回调，并且把原因返回
-        onRejected(this.reason)
+        // 创建一个微任务等待 promise2 完成初始化
+        queueMicrotask(() => {
+          try {
+            // 调用失败回调，并且把原因返回
+            const x = onRejected(this.reason)
+            // 传入 resolvePromise 集中处理
+            resolvePromise(promise2, x, resolve, reject)
+          } catch (error) {
+            reject(error)
+          }
+        })
       } else if (this.status === PENDING) {
         // 因为不知道后面状态的变化情况，所以将成功回调和失败回调存储起来。
         // 等到执行成功失败函数的时候再传递
-        this.onFulfilledCallbacks.push(onFulfilled)
-        this.onRejectedCallbacks.push(onRejected)
+        this.onFulfilledCallbacks.push(() => {
+          queueMicrotask(() => {
+            try {
+              // 获取成功回调函数的执行结果
+              const x = onFulfilled(this.value)
+              // 传入 resolvePromise 集中处理
+              resolvePromise(promise2, x, resolve, reject)
+            } catch (error) {
+              reject(error)
+            }
+          })
+        })
+        this.onRejectedCallbacks.push(() => {
+          // ==== 新增 ====
+          queueMicrotask(() => {
+            try {
+              // 调用失败回调，并且把原因返回
+              const x = onRejected(this.reason)
+              // 传入 resolvePromise 集中处理
+              resolvePromise(promise2, x, resolve, reject)
+            } catch (error) {
+              reject(error)
+            }
+          })
+        })
       }
     })
 
