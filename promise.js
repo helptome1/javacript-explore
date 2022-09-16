@@ -74,6 +74,16 @@ class MyPromise {
 
   // 4. 当实例调用promise.then时执行函数。
   then(onFulfilled, onRejected) {
+    // 这里需要对then的参数做个默认处理，可以不传参数。
+    // 如果不传，就使用默认函数
+    onFulfilled = typeof onFulfilled === 'function' ? onFulfilled : (value) => value
+    onRejected =
+      typeof onRejected === 'function'
+        ? onRejected
+        : (reason) => {
+            throw reason
+          }
+
     // 6. return一个新的promise，实现链式调用。
     const promise2 = new MyPromise((resolve, reject) => {
       // 这里的内容在执行器中，会立即执行
