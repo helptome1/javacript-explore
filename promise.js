@@ -33,10 +33,8 @@ class MyPromise {
   reason = null
 
   // 存储成功回调函数
-  // onFulfilledCallback = null
   onFulfilledCallbacks = []
   // 存储失败回调函数
-  // onRejectedCallback = null
   onRejectedCallbacks = []
 
   // 2. executor执行时把resolve传递过去，执行时传入参数value
@@ -86,8 +84,6 @@ class MyPromise {
 
     // 6. return一个新的promise，实现链式调用。
     const promise2 = new MyPromise((resolve, reject) => {
-      // 这里的内容在执行器中，会立即执行
-
       /**
        * 5. 判断状态，只有resolve和reject函数才可以修改this.status的状态。
        *  也就是说，当MyPromise实例生命一个异步对象时，this.status的状态还是PENDING
@@ -155,7 +151,6 @@ class MyPromise {
         })
       }
     })
-
     return promise2
   }
 
