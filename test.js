@@ -10,3 +10,13 @@ promise
   .then()
   .then()
   .then((value) => console.log(value))
+
+// promise的静态调用。
+MyPromise.resolve()
+  .then(() => {
+    console.log(0)
+    return MyPromise.resolve(4)
+  })
+  .then((res) => {
+    console.log(res)
+  })

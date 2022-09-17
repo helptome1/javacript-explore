@@ -158,9 +158,27 @@ class MyPromise {
 
     return promise2
   }
+
+  // resolve静态方法
+  static resolve(parameter) {
+    // 如果parameter是MyPromise类，直接给出
+    if (parameter instanceof MyPromise) return parameter
+    // 转成常规方法
+    return new MyPromise((resolve) => {
+      resolve(parameter)
+    })
+  }
+
+  // reject静态方法
+  static reject(error) {
+    return new MyPromise((resolve, reject) => {
+      reject(error)
+    })
+  }
 }
+
 function resolvePromise(promise2, x, resolve, reject) {
-  // 处理then方法中返回自身的bug
+  // 如果相等了，说明return的是自己，抛出类型错误并返回
   if (promise2 === x) {
     return reject(new TypeError('Chaining cycle detected for promise #<Promise>'))
   }
