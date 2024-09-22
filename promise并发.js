@@ -41,17 +41,17 @@ const timeout = (i) => {
 async function MyasyncPool(limit, array, callback) {
   const executing = []
   const allTask = []
-  for(let item of array) {
+  for (let item of array) {
     // 防止callback不是promise对象，使用promise.resolve包装一层
     const p = Promise.resolve(callback(item))
     allTask.push(p)
-    if(array.length >= limit) {
-      const e = p.then(()=>{
+    if (array.length >= limit) {
+      const e = p.then(() => {
         // 当前promise执行完成后，从executing数组中删除。
         executing.splice(executing.indexOf(e), 1)
       })
       executing.push(e)
-      if(executing.length >= limit) {
+      if (executing.length >= limit) {
         // 执行executing函数中的所有promise
         await Promise.race(executing)
       }
@@ -63,3 +63,24 @@ async function MyasyncPool(limit, array, callback) {
   const res = await MyasyncPool(2, [1000, 5000, 3000, 2000], timeout)
   console.log(res)
 })()
+
+async function asyncPool2(limit, array, callback) {
+  const allTask = []
+  const executing = []
+  for (let task of array) {
+    // 1. 包裹callback，防止它不是resolve对象
+    const p = Promise.resolve(callback(task))
+    allTask.push(p)
+    if (array.length >= limit) {
+      const e = p.then(() => {
+        // 当p执行完成后，从executing数组中去除
+        executing.splice(executing.indexOf(e), 1)
+      })
+      executing.push(e)
+      if (executing.length >= limit) {
+        await Promise.race(executing)
+      }
+    }
+    return Promise.all(allTask)
+  }
+}
